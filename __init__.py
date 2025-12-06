@@ -41,7 +41,7 @@ class Essentials(IPlugin):
 
     @commands.command('room', alias=['jr'])
     @permissions.has_or_moderator('essentials.jr')
-    async def join_room(self, p: Player, room_id: int = None, version_id: int = None, file_id: int = None):
+    async def join_room(self, p, room_id: int = None, version_id: int = None, file_id: int = None):
 
         def log(data: str):
             self.logger.info(f"Joining {data} for room {room_id}")
