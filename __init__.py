@@ -41,8 +41,50 @@ class Essentials(IPlugin):
 
     @commands.command('room', alias=['jr'])
     @permissions.has_or_moderator('essentials.jr')
-    async def join_room(self, p, room: Room):
-        await p.join_room(room) if room else await p.send_xt('mm', 'Room does not exist', p.id)
+    async def join_room(self, p: Player, room_id: int = None, version_id: int = None, file_id: int = None):
+
+        def log(data: str):
+            self.logger.info(f"Joining {data} for room {room_id}")
+
+        # p.room can be: PartyRoom | RoomVersion | Room | PenguinIglooRoom
+        room: Room = self.server.rooms.get(room_id)
+        if not room:
+            return self.logger.error(f"No room exists with id {room_id}")
+
+        # No version_id → join the base room
+        if version_id is None:
+            log("base room")
+            return await p.join_room(room)
+
+        # Validate version
+        room_version: RoomVersion = room.versions.get(version_id)
+        if not room_version:
+            valid_versions = ", ".join(map(str, room.versions.keys()))
+            return self.logger.info(
+                f"Version {version_id} is not available for room {room_id} "
+                f"(valid versions: {valid_versions})"
+            )
+
+        if room.name in ("party", "partysolo"):
+            if file_id is None:
+                return self.logger.error(
+                    "A valid file id must be provided for 'party' and 'partysolo' rooms"
+                )
+
+            party_room: PartyRoom = room_version.files.get(file_id)
+
+            if not party_room:
+                return self.logger.error(
+                    f"File {file_id} does not exist in version {version_id} "
+                    f"({room_version.version_name}) for room {room_id} ('{room.name}')"
+                )
+
+            log(f"file {file_id} (version {version_id})")
+            return await p.join_room(party_room)
+
+        log(f"version {version_id}")
+        return await p.join_room(room_version)
+
 
     @commands.command('ai')
     @permissions.has_or_moderator('essentials.ai')
